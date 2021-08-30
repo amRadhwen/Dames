@@ -22,8 +22,17 @@ WHITE = (255,255,255)
 def createBoard(dimensions):
     return flipud(zeros(dimensions))
 
-def fillBoard():
-    pass
+def fillBoard(board):
+    coords = createBoardCoords()
+    c = 0
+    for x in range(DIMENSIONS[0]):
+        for y in range(DIMENSIONS[1]):
+            if board[x][y] == 1:
+                screen.blit(BLACKPIECE, [coords[c][0]+5, coords[c][1]+2])
+            elif board[x][y] == 2:
+                screen.blit(WHITEPIECE, [coords[c][0]+5, coords[c][1]+2])
+            c += 1
+    
 
 def createBoardCoords():
     board_coords = []
@@ -87,12 +96,14 @@ def checkMove(board, coords):
         return False
 
 def eat(board, player, origin, moves, choice):
+    print("Player: {0}".format(player))
+    print("choice: {0}".format(choice))
     if player == 2:
         if moves:
             if moves.__len__() == 1:
                 if choice == moves[0]:
                     board[origin[0]][origin[1]]  = 0
-                    board[moves[0][0]][moves[0][1]] = 2 #same as using choice in place of moves with single index
+                    board[choice[0]][choice[1]] = 2 #same as using moves in place of moves with double index
                     return True
                 else:
                     return False
@@ -109,7 +120,7 @@ def eat(board, player, origin, moves, choice):
                 if moves.__len__() == 1:
                     if choice == moves[0]:
                         board[origin[0]][origin[1]]  = 0
-                        board[moves[0][0]][moves[0][1]] = 1 #same as using choice in place of moves with single index
+                        board[choice[0]][choice[1]] = 1 #same as using choice in place of moves with single index
                         return True
                     else:
                         return False
@@ -125,10 +136,9 @@ def eat(board, player, origin, moves, choice):
 
 
 
-def drawBoard():
+def drawBoard(board):
     coords = createBoardCoords()
     color = (DARK, LIGHT)
-    disk_color = (BLACKPIECE, WHITEPIECE)
     color_inv = False
     row_inv = 1
     c = 0
@@ -138,44 +148,15 @@ def drawBoard():
             color_inv = not color_inv
             row_inv = 1
         pygame.draw.rect(screen, color[int(color_inv)], [coords[c][0], coords[c][1], SQUAREWIDTH, SQUAREHEIGHT])
-        if c < 40 and color_inv == 0:
-            screen.blit(disk_color[color_inv], [coords[c][0]+5, coords[c][1]+2])
-        elif c > 60 and color_inv == 1:
-            screen.blit(disk_color[color_inv], [coords[c][0]+5, coords[c][1]+2])
         color_inv = not color_inv
         c += 1
         row_inv += 1
+    fillBoard(board)
 
-board = createBoard(DIMENSIONS)
-
-initBoard(board)
-print(board)
-
-#gameEnd = False
-#
-#while not gameEnd:
-#    p1 = list(input("Player one choose (exp: 1,0): "))
-#    p1 = [int(p1[0]), int(p1[2])]
-#    possibleMoves = checkMove(board, p1)
-#    if possibleMoves:
-#        choice = list(input("Move To ("+str(possibleMoves)+")"))
-#        choice = [int(choice[0]), int(choice[2])]
-#        print(choice)
-#        eat(board, 1, p1, possibleMoves, choice)
-#
-#    print(board)
-#    
-#    p2 = list(input("Player two choose (exp: 1,0): "))
-#    p2 = [int(p2[0]), int(p2[2])]
-#    possibleMoves = checkMove(board, p2)
-#    if possibleMoves:
-#        choice = list(input("Move To ("+str(possibleMoves)+")"))
-#        choice = [int(choice[0]), int(choice[2])]
-#        eat(board, 2, p2, possibleMoves, choice)
-#    
-#    print(board)
-
-
+def toggleTurn(origin):
+    x = origin[0]
+    y = origin[1]
+    return board[x][y]
             
         
 
@@ -194,25 +175,54 @@ clock = pygame.time.Clock()
 
 #change the screen color to LIGHT
 screen.fill(LIGHT)
-drawBoard()
-print(createBoard(DIMENSIONS))
+
+board = createBoard(DIMENSIONS)
+initBoard(board)
+drawBoard(board)
+#fillBoard(board)
 
 
 #update the display
 pygame.display.update()
 
+
+
+print(board)
+possibleMoves = False
+origin = []
+player = (1, 2)
+player_inv = True
 #Game main loop
 while not gameEnd:
     for e in pygame.event.get():
         if e.type == pygame.QUIT:
             gameEnd = True
-            
+
         if e.type == pygame.MOUSEBUTTONDOWN:
-            posx = e.pos[0]
-            posy = e.pos[1]
-            x = int(math.floor(posx/SQUAREWIDTH))
-            y = int(math.floor(posy/SQUAREHEIGHT))
-            print([x, y])
+            if not possibleMoves:
+                posx = e.pos[0]
+                posy = e.pos[1]
+                x = int(math.floor(posx/SQUAREWIDTH))
+                y = int(math.floor(posy/SQUAREHEIGHT))
+                possibleMoves = checkMove(board, [y, x])
+                origin = [y, x] #reversed because of matrix behaviour
+                print("origin: "+str(origin))
+                print("possibleMoves: "+str(possibleMoves))
+                print(toggleTurn(origin))
+            else:
+                posx = e.pos[0]
+                posy = e.pos[1]
+                x = int(math.floor(posx/SQUAREWIDTH))
+                y = int(math.floor(posy/SQUAREHEIGHT))
+                choice = [y, x]
+                eat(board, int(board[origin[0]][origin[1]]), origin, possibleMoves, choice)
+                print(board)
+                drawBoard(board)
+                #fillBoard(board)
+                pygame.display.update()
+                origin = []
+                possibleMoves = False
+
             
 
 
